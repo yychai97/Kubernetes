@@ -2,12 +2,10 @@
 Creates, updates, and deletes a deployment using AppsV1Api.
 """
 import kubernetes
-from kubernetes import client, config
-
-DEPLOYMENT_NAME = "nginx-deployment"
+from kubernetes import client
 
 
-def create_deployment_object(name, image, app_label, replica_no, port, cpu_req, mem_req, cpu_lim, mem_lim, affkey,
+def create_deployment_object(deploymentname, name, image, app_label, replica_no, port, cpu_req, mem_req, cpu_lim, mem_lim, affkey,
                              affvalues):
     # Configureate Pod template container
     container = client.V1Container(name=name,
@@ -40,7 +38,7 @@ def create_deployment_object(name, image, app_label, replica_no, port, cpu_req, 
     deployment = client.V1Deployment(
         api_version="apps/v1",
         kind="Deployment",
-        metadata=client.V1ObjectMeta(name=DEPLOYMENT_NAME),
+        metadata=client.V1ObjectMeta(name=deploymentname),
         spec=spec)
 
     return deployment
@@ -54,21 +52,21 @@ def create_deployment(api_instance, deployment):
     print("Deployment created. status='%s'" % str(api_response.status))
 
 
-def update_deployment(api_instance, deployment, newimage):
+def update_deployment(api_instance, deploymentname, deployment, newimage):
     # Update container image
     deployment.spec.template.spec.containers[0].image = newimage
     # Update the deployment
     api_response = api_instance.patch_namespaced_deployment(
-        name=DEPLOYMENT_NAME,
+        name=deploymentname,
         namespace="default",
         body=deployment)
     print("Deployment updated. status='%s'" % str(api_response.status))
 
 
-def delete_deployment(api_instance):
+def delete_deployment(api_instance, deploymentname):
     # Delete deployment
     api_response = api_instance.delete_namespaced_deployment(
-        name=DEPLOYMENT_NAME,
+        name=deploymentname,
         namespace="default",
         body=client.V1DeleteOptions(
             propagation_policy='Foreground',
@@ -100,8 +98,9 @@ def main():
     # Create a deployment object with client-python API. The deployment we
     # created is same as the `nginx-deployment.yaml` in the /examples folder.
     deployment = create_deployment_object()
-    # create_deployment(apps_v1, deployment)
-    update_deployment(apps_v1, deployment)
+
+    #create_deployment(apps_v1, deployment)
+    #update_deployment(apps_v1, deployment)
 
 
 # delete_deployment(apps_v1)
