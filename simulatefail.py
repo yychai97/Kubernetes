@@ -12,8 +12,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 configuration = kubernetes.client.Configuration()
 api_token = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Im1EZGVmMUVxaGVkOTVvZllZM0JWR2RFS0hrcnVRamM3MUk1eVNMOEgwQ1UifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlZmF1bHQtdG9rZW4tNDUyaGgiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGVmYXVsdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjczNTUxNWViLWRlMzEtNDFhNy04YjFkLWI3MjVhODRkNTJiNyIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmRlZmF1bHQifQ.OjyfzkwLNw1tZhDPhsRhV4dBFtoPuzZDYvhDb3soB83Do60H8CkihfsTegPbTKqRxxdFeRMR4pylFNSDkeFbxXOk0JsT7uh7IjUEiqk7dCaScdO5r-oEO1r3ENxgdbHafRl6QqPQxuIpF8-ifAJHLKSkJQ6AOhwtTA05ddTGLdZ--t0A2POp_6-GG-ZoXI_yHCShiccBlaIWjlAxt_XQNAE0ALszka5uJwTRKHRIdV3XmATRY__C3KOY2sOPyJdNCrfHPsK_r86pHk2CQoK1EojTlh6TkDIQ53koaF7kJ0x1EB6btLoFlPa6xvk1-FD3pCFaqgfVilZwQ1uebFqDKA'
-configuration.api_key = {"authorization": "Bearer " + api_token}
+#api_token = ' '
+#configuration.api_key = {"authorization": "Bearer " + api_token}
 configuration.host = "https://192.168.1.240:6443"
+#configuration.host = "https://192.168.1.42:16443"
 configuration.verify_ssl = False
 configuration.assert_hostname = False
 configuration.debug = False
@@ -21,6 +23,7 @@ configuration.debug = False
 apiclient = client.ApiClient(configuration)
 v1 = client.CoreV1Api(apiclient)
 v1pods = client.V1Pod(apiclient)
+v1dep = client.AppsV1Api(apiclient)
 
 
 def delete_pod(name, ns: str = "default", label_selector: str = "name in ({name})"):
@@ -45,7 +48,7 @@ def list_pods_for_default_namespace():
     print("Name\t\t\t\t\t\t IP\t\t\t\t Status\t\t Time")
     ret = v1.list_namespaced_pod(watch=False,namespace="default",pretty=False)
     for i in ret.items:
-        print("%s\t %s\t %s\t %s\t" % (i.metadata.name, i.status.pod_ip, get_pod_status(i.metadata.name), query_start_time(i.metadata.name)))
+        print("%s\t %s\t %s\t %s\t" % (i.metadata.name, i.status.pod_ip, i.status.phase,query_start_time(i.metadata.name)))
 
 def query_start_time(podname):
     try:
@@ -61,12 +64,32 @@ def query_start_time(podname):
     except ApiException as E:
         print("Issues happend")
 
-def get_pod_status(podname):
+
+def get_yaml_deployment(name):
+    try:
+        api_response = v1dep.read_namespaced_deployment(name, namespace="default")
+        print(api_response)
+    except ApiException as e:
+        print("Exception when calling AppsV1Api->read_namespaced_deployment: %s\n" % e)
+
+def patch_yaml_deployment(name, deployment):
+    try:
+        deployment.spec.template.spec.resources.requests.cpu = "600m"
+        api_response = v1dep.patch_namespaced_deployment(name, namespace="default", body=deployment)
+        print(api_response)
+    except ApiException as e:
+        print("Exception when calling AppsV1Api->read_namespaced_deployment: %s\n" % e)
+
+"""def get_pod_status(podname):
     try:
         api_response = requests.get(configuration.host + "/api/v1/namespaces/default/pods/" + podname + "/status",
                                     verify=False)
+        api_responses = v1.list_namespaced_pod(namespace="default")
+        for
         responses = json.loads(api_response.text)
-        statusofpod = responses['status']['phase']
+        
+        #print(responses)
+        #statusofpod = responses['status']['phase']
 
         return statusofpod
     except ApiException as E:
@@ -74,7 +97,7 @@ def get_pod_status(podname):
 
     #except ApiException as E:
      #   print("Error cannot get status")
-
+"""
 
 
 #def main():
@@ -84,5 +107,8 @@ if __name__ == '__main__':
     #watch_query_start_time()
     #main()
     #list_all_pods_all_namespaces()
-    list_pods_for_default_namespace()
+    #list_pods_for_default_namespace()
+    #get_yaml_deployment("php-apache")
+    patch_yaml_deployment("php-apache")
+
 

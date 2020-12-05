@@ -1,7 +1,10 @@
+import datetime
+import time
+
 import kubernetes.client
-from kubernetes.client.rest import ApiException
 from kubernetes import client
-import datetime, time
+from kubernetes.client.rest import ApiException
+
 import simulatefail as podmgr
 import virtualboxcont
 
@@ -16,8 +19,8 @@ configuration.debug = False
 apiclient = client.ApiClient(configuration)
 
 input_from_usr = ""
-listofpods = [None]*10
-listvm = [None]*20
+listofpods = [None]*50
+listvm = [None]*50
 
 def main():
     while(1):
@@ -32,7 +35,7 @@ def main():
                 print("No\t Name\t\t\t\t\t\t\t Status\t\t Time")
                 for i in ret.items:
                     listofpods[count] = i.metadata.name
-                    print("(%d)  %s\t %s\t %s" % (count, i.metadata.name, podmgr.get_pod_status(i.metadata.name), podmgr.query_start_time(i.metadata.name)))
+                    print("(%d)  %s\t %s\t %s" % (count, i.metadata.name, i.status.phase, podmgr.query_start_time(i.metadata.name)))
                     count += 1
                 try:
                     input_from_usr = input("Alternatively, type (%d) or Enter to Refresh.: " % (count))
@@ -48,42 +51,48 @@ def main():
 
                 except ApiException as E:
                     print("Wrong value entered or not found")
+                except:
+                    print("Error in retrieve some info")
 
         elif (input_from_usr == '2'):
             while (input_from_usr != "exit"):
-                print("List of VM to pause")
+                print("List of VM to pause. Type 'exit' to quit")
                 count = 1
                 for m in virtualboxcont.vbox.machines:
                     listvm[count] = m
                     print("(%d) %s" % (count, listvm[count]))
                     count += 1
                 try:
-                    input_from_usr = input()
+                    input_from_usr = input("Enter value: ")
                     if (input_from_usr == "exit"):
                         break;
                     virtualboxcont.pause_machine(str(listvm[int(input_from_usr)]))
-                    print("VM %s paused at %s" % (listvm[int(input_from_usr)], datetime.time))
+                    print("VM %s paused at %s" % (listvm[int(input_from_usr)], datetime.datetime.now()))
                     time.sleep(1)
                 except ApiException as exc:
                     print("Wrong value entered or not found")
+                except:
+                    print("Error. The machine is in pause state.")
 
         elif (input_from_usr == '3'):
             while (input_from_usr != "exit"):
-                print("List of VM to pause")
+                print("List of VM to pause. Type 'exit to quit")
                 count = 1
                 for m in virtualboxcont.vbox.machines:
                     listvm[count] = m
                     print("(%d) %s" % (count, listvm[count]))
                     count += 1
                 try:
-                    input_from_usr = input()
+                    input_from_usr = input("Enter value: ")
                     if (input_from_usr == "exit"):
                         break;
                     virtualboxcont.resume_machine(str(listvm[int(input_from_usr)]))
-                    print("VM %s resumed at %s" % (listvm[int(input_from_usr)], datetime.time))
+                    print("VM %s resumed at %s" % (listvm[int(input_from_usr)], datetime.datetime.now()))
                     time.sleep(1)
                 except ApiException as exc:
                     print("Wrong value entered or not found")
+                except:
+                    print("Error. The machine is in resume state.")
 
         else:
             print("Invalid input")
